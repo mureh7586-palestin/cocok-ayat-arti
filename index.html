@@ -137,7 +137,7 @@
   <script>
     /* ========== CONFIG ========== */
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbypH_q7_6FSGOfVptbHllX2CLdMqBNJDMEnp7i87NBtiVz8UPktOaJGAggc5KrlnQXL/exec";
-    const CLIENT_TOKEN = "game_ayat_v1"; // isi jika Apps Script pakai SECRET_TOKEN
+    const CLIENT_TOKEN = ""; // isi jika Apps Script pakai SECRET_TOKEN
 
     /* ========== DATA ========== */
     const dataSurat = {
@@ -453,7 +453,7 @@
 
     function sendOrQueueResult(payload){
       updateStatusUI("Mengirim...", "warn");
-      if(!navigator.onLine || !WEB_APP_URL || WEB_APP_URL.includes("https://script.google.com/macros/s/AKfycbypH_q7_6FSGOfVptbHllX2CLdMqBNJDMEnp7i87NBtiVz8UPktOaJGAggc5KrlnQXL/exec")){
+      if(!navigator.onLine || !WEB_APP_URL || WEB_APP_URL.includes("")){
         enqueueResult(payload);
         updateStatusUI("Offline atau WEB_APP_URL belum diatur. Hasil disimpan sementara.", "warn");
         return;
@@ -478,7 +478,7 @@
 
     async function flushQueue(){
       if(!navigator.onLine) return;
-      if(!WEB_APP_URL || WEB_APP_URL.includes("https://script.google.com/macros/s/AKfycbypH_q7_6FSGOfVptbHllX2CLdMqBNJDMEnp7i87NBtiVz8UPktOaJGAggc5KrlnQXL/exec")){
+      if(!WEB_APP_URL || WEB_APP_URL.includes("")){
         updateStatusUI("WEB_APP_URL belum diatur, flush dibatalkan.","error"); return;
       }
       const q = getQueue();
