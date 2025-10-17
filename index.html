@@ -1025,6 +1025,45 @@ window.onload = function() {
 };
 
     // =====================
+// Alternative method tanpa fetch API
+function saveToSpreadsheet(playerData) {
+  // Jika menggunakan Google Apps Script sebagai web app
+  if (typeof google !== 'undefined' && google.script) {
+    // Method original untuk embedded web app
+    google.script.run
+      .withSuccessHandler(function(result) {
+        console.log('Data saved successfully:', result);
+      })
+      .withFailureHandler(function(error) {
+        console.error('Error saving data:', error);
+      })
+      .saveGameResult(playerData);
+  } else {
+    // Method untuk external website
+    const webAppUrl = 'https://script.google.com/macros/s/AKfycbypH_q7_6FSGOfVptbHllX2CLdMqBNJDMEnp7i87NBtiVz8UPktOaJGAggc5KrlnQXL/exec';
+    
+    // Create form submission
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = webAppUrl;
+    form.style.display = 'none';
+    
+    // Add data as hidden inputs
+    for (const key in playerData) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = playerData[key];
+      form.appendChild(input);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
+    
+    console.log('Data submitted via form');
+  }
+}
+ /*   
     // Konfigurasi Apps Script URL - GANTI DENGAN URL ANDA
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbypH_q7_6FSGOfVptbHllX2CLdMqBNJDMEnp7i87NBtiVz8UPktOaJGAggc5KrlnQXL/exec';
 
@@ -1083,7 +1122,7 @@ async function loadSuratDataFromSheet() {
     console.error('Error:', error);
     useDefaultData();
   }
-}
+} */
   </script>
 </body>
 </html>
