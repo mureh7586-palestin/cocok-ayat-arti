@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Game Cocokkan Ayat - Dengan Efek Suara</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Tahoma,Arial; background:linear-gradient(135deg,#f4f8ff 0%,#e6f0ff 100%);color:#333;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:15px}
+    .container{width:100%;max-width:900px;background:#fff;border-radius:15px;box-shadow:0 5px 15px rgba(0,0,0,0.1);overflow:hidden;margin-bottom:20px}
+    header{background:linear-gradient(to right,#4a6fa5,#166088);color:#fff;padding:15px;text-align:center}
+    h1{font-size:22px;margin-bottom:8px}
+    .game-info{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;padding:12px 15px;background:#f1f8ff;border-bottom:1px solid #e2e8f0;gap:10px}
+    .stats{display:flex;gap:10px;flex-wrap:wrap}
+    .stat-box{background:#fff;padding:6px 12px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.05);font-weight:700;display:flex;align-items:center;gap:6px;font-size:14px}
+    .controls{display:flex;gap:8px}
+    button{padding:8px 12px;border:none;border-radius:6px;cursor:pointer;font-weight:600;transition:all .2s;font-size:14px}
+    .btn-primary{background:#4a6fa5;color:#fff}
+    .btn-success{background:#28a745;color:#fff}
+    .btn-warning{background:#ffc107;color:#222}
+    .btn-danger{background:#dc3545;color:#fff}
+    .btn-whatsapp{background:#25D366;color:#fff}
+    .game-container{position:relative;display:flex;justify-content:space-between;padding:20px 15px;min-height:300px}
+    .list{width:45%;display:flex;flex-direction:column;gap:12px}
+    .list-title{text-align:center;margin-bottom:12px;font-size:16px;color:#166088;font-weight:600;padding-bottom:5px;border-bottom:2px solid #4cb1a7}
+    .item{background:#fff;border:2px solid #e2e8f0;border-radius:10px;padding:12px;cursor:pointer;transition:all .3s;position:relative;z-index:2;box-shadow:0 2px 4px rgba(0,0,0,0.05)}
+    .arabic{font-size:18px;font-weight:700;text-align:right;margin-bottom:6px;color:#166088;font-family:'Traditional Arabic','Scheherazade New',serif}
+    .translation{font-size:14px;color:#333;line-height:1.4}
+    .selected{background:#fff9e6;border-color:#ffc107}
+    .correct{background:#eaffea;border-color:#28a745}
+    .wrong{background:#ffebeb;border-color:#dc3545}
+    svg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none}
+    line{stroke:#a0aec0;stroke-width:3;marker-end:url(#arrowhead);transition:all .3s}
+    .result-container{text-align:center;padding:15px;background:#f8f9fa;border-top:1px solid #e2e8f0}
+    #result{font-size:16px;font-weight:700;margin-bottom:12px}
+    .progress-container{width:100%;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;margin:12px 0}
+    .progress-bar{height:100%;background:linear-gradient(to right,#4a6fa5,#4cb1a7);width:0%;transition:width .5s}
+    .login-container{background:#fff;padding:20px;border-radius:15px;box-shadow:0 5px 15px rgba(0,0,0,0.1);width:100%;max-width:400px;margin:20px auto}
+    .input-group{margin:15px 0;text-align:left}
+    .input-group label{display:block;margin-bottom:5px;font-weight:700;color:#166088}
+    .input-group input{width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:8px;font-size:16px}
+    .result-details{text-align:left;margin:15px 0;padding:15px;background:#f8f9fa;border-radius:10px}
+    .result-item{display:flex;justify-content:space-between;margin:10px 0;padding-bottom:8px;border-bottom:1px solid #e2e8f0}
+    .result-value{font-weight:700;color:#166088}
+    .hidden{display:none}
+    .surat-info{text-align:center;margin:10px 0;font-weight:700;color:#166088}
+    .sound-control{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.85);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;box-shadow:0 2px 5px rgba(0,0,0,.1)}
+    .status{font-size:14px;color:#166088;margin-top:10px}
+    .status.warn{color:#c68600}
+    .status.error{color:#c92a2a}
+  </style>
+</head>
+<body>
+  <div class="sound-control" id="soundControl" onclick="toggleSound()">🔊</div>
+
+  <!-- Login -->
+  <div class="login-container" id="loginScreen">
+    <h1>Game Mencocokkan Ayat</h1>
+    <div class="input-group">
+      <label for="playerName">Nama:</label>
+      <input id="playerName" type="text" placeholder="Masukkan nama Anda" />
+    </div>
+    <div class="input-group">
+      <label for="playerClass">Kelas:</label>
+      <input id="playerClass" type="text" placeholder="Masukkan kelas Anda" />
+    </div>
+    <button class="btn-primary" onclick="startGame()" style="width:100%;padding:12px">Mulai Game</button>
+    <p class="status">Status koneksi: <span id="connState">Online</span></p>
+  </div>
+
+  <!-- Game -->
+  <div class="container hidden" id="gameScreen">
+    <header><h1>Game Mencocokkan Ayat</h1><p>Pilih ayat Arab dan artinya yang sesuai</p></header>
+
+    <div class="game-info">
+      <div class="stats">
+        <div class="stat-box">⏱️ <span id="timer" style="margin-left:6px">0:00</span></div>
+        <div class="stat-box">✅ <span id="score" style="margin-left:6px">0</span></div>
+        <div class="stat-box">📊 <span id="progress" style="margin-left:6px">0/0</span></div>
+        <div class="stat-box">📖 <span id="surat-name" style="margin-left:6px">Al-Ikhlas</span></div>
+      </div>
+      <div class="controls">
+        <button class="btn-success" onclick="checkAnswers()">Cek</button>
+        <button class="btn-warning" onclick="resetGame()">Reset</button>
+      </div>
+    </div>
+
+    <div class="progress-container"><div id="progress-bar" class="progress-bar"></div></div>
+
+    <div class="surat-info">Surat: <span id="current-surat">Al-Ikhlas</span> - Ayat: <span id="current-ayat">1/4</span></div>
+
+    <div id="gameContainer" class="game-container">
+      <svg id="connector"><defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#a0aec0"/></marker></defs></svg>
+
+      <div class="list"><div class="list-title">Ayat Arab</div><div id="arabicList"></div></div>
+      <div class="list"><div class="list-title">Terjemahan</div><div id="translationList"></div></div>
+    </div>
+
+    <div class="result-container"><p id="result"></p></div>
+  </div>
+
+  <!-- Result -->
+  <div class="container hidden" id="resultScreen">
+    <header><h1>Alhamdulillah</h1><p>Selamat! Anda telah menyelesaikan game</p></header>
+
+    <div class="result-details">
+      <div class="result-item"><span>Nama:</span><span id="resultName" class="result-value">-</span></div>
+      <div class="result-item"><span>Kelas:</span><span id="resultClass" class="result-value">-</span></div>
+      <div class="result-item"><span>Nilai:</span><span id="resultScore" class="result-value">0</span></div>
+      <div class="result-item"><span>Jumlah Benar:</span><span id="resultCorrect" class="result-value">0</span></div>
+      <div class="result-item"><span>Jumlah Salah:</span><span id="resultWrong" class="result-value">0</span></div>
+      <div class="result-item"><span>Waktu:</span><span id="resultTime" class="result-value">0:00</span></div>
+      <div class="result-item"><span>Surat Terselesaikan:</span><span id="resultSurat" class="result-value">0/10</span></div>
+    </div>
+
+    <div class="result-container">
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button class="btn-whatsapp" onclick="sendToWhatsApp()"><span style="margin-right:8px">📱</span>Kirim ke WhatsApp</button>
+        <button class="btn-primary" onclick="restartGame()">Main Lagi</button>
+        <button class="btn-success" id="doneBtn" onclick="doneAndBack()">Selesai</button>
+      </div>
+
+      <!-- STATUS di bawah tombol "Selesai" sesuai permintaan -->
+      <div id="statusKirim" class="status" style="text-align:center;margin-top:12px">
+        <span id="statusText">Belum dikirim</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio -->
+  <audio id="clickSound" preload="auto"><source src="click.wav" type="audio/mpeg"></audio>
+  <audio id="correctSound" preload="auto"><source src="correct.wav" type="audio/mpeg"></audio>
+  <audio id="wrongSound" preload="auto"><source src="wrong_5.mp3" type="audio/mpeg"></audio>
+  <audio id="completeSound" preload="auto"><source src="yay.mp3" type="audio/mpeg"></audio>
+  <audio id="finishSound" preload="auto"><source src="success.mp3" type="audio/mpeg"></audio>
+
+  <script>
+    /* ========== CONFIG ========== */
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbypH_q7_6FSGOfVptbHllX2CLdMqBNJDMEnp7i87NBtiVz8UPktOaJGAggc5KrlnQXL/exec";
+    const CLIENT_TOKEN = "game_ayat_v1"; // isi jika Apps Script pakai SECRET_TOKEN
+
+    /* ========== DATA ========== */
+    const dataSurat = {
+      "Al-Ikhlas":[
+        {arabic:"قُلْ هُوَ اللّٰهُ اَحَدٌۚ",arti:"Katakanlah: Dialah Allah, Yang Maha Esa"},
+        {arabic:"اَللّٰهُ الصَّمَدُۚ",arti:"Allah tempat meminta segala sesuatu"},
+        {arabic:"لَمْ يَلِدْ وَلَمْ يُوْلَدْۙ",arti:"Dia tiada beranak dan tiada pula diperanakkan"},
+        {arabic:"وَلَمْ يَكُنْ لَّهٗ كُفُوًا اَحَدٌ",arti:"Dan tidak ada seorang pun yang setara dengan Dia"}
+      ],
+      "Al-Fatihah":[
+        {arabic:"بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ",arti:"Dengan menyebut nama Allah Yang Maha Pengasih lagi Maha Penyayang"},
+        {arabic:"اَلْحَمْدُ لِلّٰهِ رَبِّ الْعٰلَمِيْنَۙ",arti:"Segala puji bagi Allah, Tuhan semesta alam"},
+        {arabic:"الرَّحْمٰنِ الرَّحِيْمِۙ",arti:"Yang Maha Pengasih, Maha Penyayang"},
+        {arabic:"مٰلِكِ يَوْمِ الدِّيْنِۗ",arti:"Yang menguasai di Hari Pembalasan"},
+        {arabic:"اِيَّاكَ نَعْبُدُ وَاِيَّاكَ نَسْتَعِيْنُ",arti:"Hanya kepada Engkaulah kami menyembah dan hanya kepada Engkaulah kami mohon pertolongan"},
+        {arabic:"اِهْدِنَا الصِّرَاطَ الْمُسْتَقِيْمَ",arti:"Tunjukanlah kami jalan yang lurus"},
+        {arabic:"صِرَاطَ الَّذِينَ اَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوْبِ عَلَيْهِمْ وَلَا الضَّآلِّيْنَ",arti:"(Yaitu) jalan orang-orang yang telah Engkau beri nikmat kepadanya; bukan (jalan) mereka yang dimurkai, dan bukan (pula jalan) mereka yang sesat."}
+      ],
+      "An-Nas":[
+        {arabic:"قُلْ أَعُوذُ بِرَبِّ النَّاسِ",arti:"Katakanlah, Aku berlindung kepada Tuhannya manusia,"},
+        {arabic:"مَلِكِ النَّاسِ",arti:"Raja manusia,"},
+        {arabic:"إِلَهِ النَّاسِ",arti:"sembahan manusia,"},
+        {arabic:"مِنْ شَرِّ الْوَسْوَاسِ الْخَنَّاسِ",arti:"dari kejahatan (bisikan) setan yang bersembunyi,"},
+        {arabic:"الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ",arti:"yang membisikkan (kejahatan) ke dalam dada manusia,"},
+        {arabic:"مِنَ الْجِنَّةِ وَالنَّاسِ",arti:"dari (golongan) jin dan manusia."}
+      ],
+      "Al-Falaq":[
+        {arabic:"قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ",arti:"Katakanlah, Aku berlindung kepada Tuhan yang menguasai subuh (fajar)"},
+        {arabic:"مِنْ شَرِّ مَا خَلَقَ",arti:"dari kejahatan (makhluk yang) Dia ciptakan,"},
+        {arabic:"وَمِنْ شَرِّ غَاسِقٍ إِذَا وَقَبَ",arti:"dan dari kejahatan malam apabila telah gelap gulita,"},
+        {arabic:"وَمِنْ شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ",arti:"dan dari kejahatan (perempuan-perempuan) penyihir yang meniup pada buhul-buhul (talinya)"},
+        {arabic:"وَمِنْ شَرِّ حَاسدٍ إِذَا حَسَدَ",arti:"dan dari kejahatan orang yang dengki apabila dia dengki."}
+      ],
+      "Al-Lahab":[
+        {arabic:"تَبَّتْ يَدَا أَبِي لَهَبٍ وَتَبَّ",arti:"Binasalah kedua tangan Abu Lahab dan benar-benar binasa dia!"},
+        {arabic:"مَا أَغْنَى عَنْهُ مَالُهُ وَمَا كَسَبَ",arti:"Tidaklah berguna baginya hartanya dan apa yang dia usahakan."},
+        {arabic:"سَيَصْلَى نَارًا ذَاتَ لَهَبٍ",arti:"Kelak dia akan masuk ke dalam api yang bergejolak (neraka)."},
+        {arabic:"وَامْرَأَتُهُ حَمَّالَةَ الْحَطَبِ",arti:"Dan (begitu pula) istrinya, pembawa kayu bakar (penyebar fitnah)."},
+        {arabic:"فِي جِيدِهَا حَبْلٌ مِنْ مَسَدٍ",arti:"Di lehernya ada tali dari sabut yang dipintal."}
+      ],
+      "An-Nashr":[
+        {arabic:"إِذَا جَاءَ نَصْرُ اللَّهِ وَالْفَتْحُ",arti:"Apabila telah datang pertolongan Allah dan kemenangan"},
+        {arabic:"وَرَأَيْتَ النَّاسَ يَدْخُلُونَ فِي دِينِ اللَّهِ أَفْوَاجًا",arti:"dan engkau melihat manusia berbondong-bondong masuk agama Allah,"},
+        {arabic:"فَسَبِّحْ بِحَمْدِ رَبِّكَ وَاسْتَغْفِرْهُ ۚ إِنَّهُ كَانَ تَوَّابًا",arti:"bertasbihlah dengan memuji Tuhanmu dan mohonlah ampun kepada-Nya. Sesungguhnya Dia Maha Penerima tobat."}
+      ],
+      "Al-Kafirun":[
+        {arabic:"قُلْ يَا أَيُّهَا الْكَافِرُونَ",arti:"Katakanlah (Muhammad), Wahai orang-orang kafir!"},
+        {arabic:"لَا أَعْبُدُ مَا تَعْبُدُونَ",arti:"Aku tidak akan menyembah apa yang kamu sembah."},
+        {arabic:"وَلَا أَنْتُمْ عَابِدُونَ مَا أَعْبُدُ",arti:"Dan kamu bukan penyembah apa yang aku sembah."},
+        {arabic:"وَلَا أَنَا عَابِدٌ مَا عَبَدْتُمْ",arti:"Dan aku tidak pernah menjadi penyembah apa yang kamu sembah."},
+        {arabic:"وَلَا أَنْتُمْ عَابِدُونَ مَا أَعْبُدُ",arti:"Dan kamu tidak pernah (pula) menjadi penyembah apa yang aku sembah."},
+        {arabic:"لَكُمْ دِينُكُمْ وَلِيَ دِينِ",arti:"Untukmu agamamu, dan untukku agamaku."}
+      ],
+      "Al-Kautsar":[
+        {arabic:"إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ",arti:"Sesungguhnya Kami telah memberikan kepadamu nikmat yang banyak."},
+        {arabic:"فَصَلِّ لِرَبِّكَ وَانْحَرْ",arti:"Maka dirikanlah sholat karena Tuhanmu; dan berkorbanlah."},
+        {arabic:"إِنَّ شَانِئَكَ هُوَ الْأَبْتَرُ",arti:"Sesungguhnya orang-orang yang membenci kamu dialah yang terputus."}
+      ],
+      "Al-Ma'un":[
+        {arabic:"أَرَأَيْتَ الَّذِي يُكَذِّبُ بِالدِّينِ",arti:"Tahukah kamu orang yang mendustakan agama?"},
+        {arabic:"فَذَلِكَ الَّذِي يَدُعُّ الْيَتِيمَ",arti:"Maka orang itulah yang menghardik anak yatim,"},
+        {arabic:"وَلَا يَحُضُّ عَلَى طَعَامِ الْمِسْكِينِ",arti:"dan tidak menganjurkan memberi makan orang miskin."},
+        {arabic:"فَوَيْلٌ لِلْمُصَلِّينَ",arti:"Maka celakalah orang-orang yang shalat,"},
+        {arabic:"الَّذِينَ هُمْ عَنْ صَلَاتِهِمْ سَاهُونَ",arti:"(yaitu) orang-orang yang lalai terhadap shalatnya,"},
+        {arabic:"الَّذِينَ هُمْ يُرَاءُونَ",arti:"yang berbuat ria,"},
+        {arabic:"وَيَمْنَعُونَ الْمَاعُونَ",arti:"dan enggan (memberi) barang berguna."}
+      ],
+      "Quraisy":[
+        {arabic:"لِإِيلَافِ قُرَيْشٍ",arti:"Karena kebiasaan orang-orang Quraisy,"},
+        {arabic:"إِيلَافِهِمْ رِحْلَةَ الشِّتَاءِ وَالصَّيْفِ",arti:"(yaitu) kebiasaan mereka bepergian pada musim dingin dan musim panas."},
+        {arabic:"فَلْيَعْبُدُوا رَبَّ هَذَا الْبَيْتِ",arti:"Maka hendaklah mereka menyembah Tuhan (pemilik) rumah ini (Ka'bah)"},
+        {arabic:"الَّذِي أَطْعَمَهُمْ مِنْ جُوعٍ وَآمَنَهُمْ مِنْ خَوْفٍ",arti:"Yang telah memberi makanan kepada mereka untuk menghilangkan lapar dan mengamankan mereka dari rasa ketakutan."}
+      ]
+    };
+
+    /* ========== STATE ========== */
+    const suratList = Object.keys(dataSurat);
+    let currentSuratIndex = 0;
+    let ayatData = [];
+    let selectedArabic = null;
+    let pairs = {};
+    let startTime = 0;
+    let timerInterval = null;
+    let score = 0;
+    let correctCount = 0;
+    let wrongCount = 0;
+    let totalCount = 0;
+    let playerName = "";
+    let playerClass = "";
+    let completedSurat = 0;
+    let checkCount = 0;
+    let soundEnabled = true;
+
+    // audio elems
+    const clickSound = document.getElementById("clickSound");
+    const correctSound = document.getElementById("correctSound");
+    const wrongSound = document.getElementById("wrongSound");
+    const completeSound = document.getElementById("completeSound");
+    const finishSound = document.getElementById("finishSound");
+
+    function playSound(s){
+      if(soundEnabled && s){ s.currentTime=0; s.play().catch(()=>{}); }
+    }
+    function toggleSound(){ soundEnabled = !soundEnabled; document.getElementById("soundControl").textContent = soundEnabled ? "🔊" : "🔇"; }
+
+    function startGame(){
+      playerName = document.getElementById("playerName").value.trim();
+      playerClass = document.getElementById("playerClass").value.trim();
+      if(!playerName||!playerClass){ alert("Silakan isi nama dan kelas terlebih dahulu!"); return; }
+      document.getElementById("loginScreen").classList.add("hidden");
+      document.getElementById("gameScreen").classList.remove("hidden");
+      initGame();
+    }
+
+    function initGame(){
+      clearInterval(timerInterval);
+      startTime = Date.now();
+      timerInterval = setInterval(updateTimer,1000);
+
+      ayatData = dataSurat[suratList[currentSuratIndex]];
+      selectedArabic = null; pairs = {}; checkCount = 0;
+      totalCount = ayatData.length;
+
+      const arabicList = document.getElementById("arabicList");
+      const translationList = document.getElementById("translationList");
+      const connector = document.getElementById("connector");
+      document.getElementById("result").textContent = "";
+      arabicList.innerHTML = ""; translationList.innerHTML = "";
+      connector.querySelectorAll("line").forEach(l=>l.remove());
+
+      document.getElementById("score").textContent = score;
+      document.getElementById("progress").textContent = `0/${totalCount}`;
+      document.getElementById("surat-name").textContent = suratList[currentSuratIndex];
+      document.getElementById("current-surat").textContent = suratList[currentSuratIndex];
+      document.getElementById("current-ayat").textContent = `1/${totalCount}`;
+      updateProgressBar();
+
+      ayatData.forEach((ayat,index)=>{
+        const d=document.createElement("div");
+        d.className="item"; d.innerHTML=`<div class="arabic">${ayat.arabic}</div>`;
+        d.dataset.index=index; d.onclick=()=>{playSound(clickSound); selectArabic(d);};
+        arabicList.appendChild(d);
+      });
+
+      shuffle([...ayatData]).forEach(ayat=>{
+        const originalIndex = ayatData.findIndex(a=>a.arti===ayat.arti);
+        const d=document.createElement("div");
+        d.className="item"; d.innerHTML=`<div class="translation">${ayat.arti}</div>`;
+        d.dataset.index=originalIndex; d.onclick=()=>{playSound(clickSound); selectTranslation(d);};
+        translationList.appendChild(d);
+      });
+
+      setTimeout(drawLines,100);
+      window.addEventListener('resize', drawLines);
+    }
+
+    function shuffle(arr){ for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
+
+    function updateTimer(){ const elapsed=Math.floor((Date.now()-startTime)/1000); const m=Math.floor(elapsed/60); const s=elapsed%60; document.getElementById("timer").textContent=`${m}:${s.toString().padStart(2,'0')}`; }
+
+    function selectArabic(el){ document.querySelectorAll("#arabicList .item").forEach(d=>d.classList.remove("selected")); selectedArabic=el; el.classList.add("selected"); }
+
+    function selectTranslation(el){
+      if(!selectedArabic) return;
+      const aIdx = selectedArabic.dataset.index;
+      const tIdx = el.dataset.index;
+      pairs[aIdx]=tIdx;
+      drawLines();
+      selectedArabic.classList.remove("selected");
+      selectedArabic=null;
+      document.getElementById("current-ayat").textContent = `${Object.keys(pairs).length}/${totalCount}`;
+      updateProgressBar();
+    }
+
+    function drawLines(){
+      const svg=document.getElementById("connector"); const container=document.getElementById("gameContainer");
+      svg.querySelectorAll("line").forEach(l=>l.remove());
+      for(let aIndex in pairs){
+        const tIndex = pairs[aIndex];
+        const arabicEl = document.querySelector(`#arabicList .item[data-index='${aIndex}']`);
+        const translationEl = document.querySelector(`#translationList .item[data-index='${tIndex}']`);
+        if(arabicEl && translationEl){
+          const r1=arabicEl.getBoundingClientRect(), r2=translationEl.getBoundingClientRect(), c=container.getBoundingClientRect();
+          const x1 = r1.right - c.left, y1 = r1.top + r1.height/2 - c.top;
+          const x2 = r2.left - c.left, y2 = r2.top + r2.height/2 - c.top;
+          const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+          line.setAttribute("x1",x1); line.setAttribute("y1",y1); line.setAttribute("x2",x2); line.setAttribute("y2",y2);
+          line.setAttribute("data-arabic",aIndex); line.setAttribute("data-translation",tIndex);
+          svg.appendChild(line);
+        }
+      }
+    }
+
+    function checkAnswers(){
+      playSound(clickSound); checkCount++;
+      let correct=0, incorrectThisCheck=0;
+      const svg=document.getElementById("connector");
+      document.querySelectorAll("#arabicList .item, #translationList .item").forEach(el=>el.classList.remove("correct","wrong"));
+      svg.querySelectorAll("line").forEach(line=>{
+        const aIndex=line.getAttribute("data-arabic"), tIndex=line.getAttribute("data-translation");
+        const arabicEl = document.querySelector(`#arabicList .item[data-index='${aIndex}']`);
+        const translationEl = document.querySelector(`#translationList .item[data-index='${tIndex}']`);
+        if(aIndex===tIndex){ correct++; if(arabicEl) arabicEl.classList.add("correct"); if(translationEl) translationEl.classList.add("correct"); line.setAttribute("stroke","#28a745"); }
+        else { incorrectThisCheck++; if(arabicEl) arabicEl.classList.add("wrong"); if(translationEl) translationEl.classList.add("wrong"); line.setAttribute("stroke","#dc3545"); }
+      });
+
+      correctCount += correct;
+      wrongCount += incorrectThisCheck;
+
+      if(correct === totalCount){
+        playSound(correctSound);
+        const suratScore = Math.max(0, 100 - ((checkCount - 1) * 2));
+        score += suratScore; completedSurat++;
+        document.getElementById("score").textContent = score;
+        document.getElementById("progress").textContent = `${correct}/${totalCount}`;
+        updateProgressBar();
+
+        if(currentSuratIndex < suratList.length - 1){
+          document.getElementById("result").textContent = `✅ Surat ${suratList[currentSuratIndex]} selesai! +${suratScore} poin`;
+          setTimeout(()=>{ currentSuratIndex++; initGame(); }, 1200);
+        } else {
+          clearInterval(timerInterval);
+          playSound(completeSound);
+          setTimeout(showResult,900);
+        }
+      } else {
+        playSound(wrongSound);
+        document.getElementById("result").textContent = `Masih ada ${totalCount - correct} yang salah. Perbaiki dan coba lagi!`;
+      }
+    }
+
+    function updateProgressBar(){ const p=(Object.keys(pairs).length/totalCount)*100||0; document.getElementById("progress-bar").style.width = `${p}%`; }
+    function resetGame(){ playSound(clickSound); initGame(); }
+
+    function showResult(){
+      playSound(finishSound);
+      document.getElementById("gameScreen").classList.add("hidden");
+      document.getElementById("resultScreen").classList.remove("hidden");
+
+      const elapsed=Math.floor((Date.now()-startTime)/1000);
+      const m=Math.floor(elapsed/60), s=elapsed%60;
+      const timeString = `${m}:${s.toString().padStart(2,'0')}`;
+      const wrongAnswers = Math.max(0, checkCount - completedSurat);
+
+      document.getElementById("resultName").textContent = playerName;
+      document.getElementById("resultClass").textContent = playerClass;
+      document.getElementById("resultScore").textContent = score;
+      document.getElementById("resultCorrect").textContent = correctCount;
+      document.getElementById("resultWrong").textContent = wrongAnswers;
+      document.getElementById("resultTime").textContent = timeString;
+      document.getElementById("resultSurat").textContent = `${completedSurat}/${suratList.length}`;
+
+      const payload = {
+        nama: playerName,
+        kelas: playerClass,
+        nilai: score,
+        jumlah_benar: correctCount,
+        jumlah_salah: wrongAnswers,
+        waktu: timeString,
+        surat_terselesaikan: completedSurat,
+        surat_total: suratList.length,
+        notes: `checks:${checkCount}`
+      };
+
+      sendOrQueueResult(payload);
+    }
+
+    function sendToWhatsApp(){
+      playSound(clickSound);
+      const phone = "+6281939352081";
+      const elapsed=Math.floor((Date.now()-startTime)/1000);
+      const m=Math.floor(elapsed/60), s=elapsed%60;
+      const timeString = `${m}:${s.toString().padStart(2,'0')}`;
+      const wrongAnswers = Math.max(0, checkCount - completedSurat);
+
+      let msg = `*HASIL GAME COCOKKAN AYAT*%0A%0A`;
+      msg += `Nama: ${playerName}%0A`;
+      msg += `Kelas: ${playerClass}%0A`;
+      msg += `Nilai: ${score}%0A`;
+      msg += `Jumlah Benar: ${correctCount}%0A`;
+      msg += `Jumlah Salah: ${wrongAnswers}%0A`;
+      msg += `Waktu: ${timeString}%0A`;
+      msg += `Surat Terselesaikan: ${completedSurat}/${suratList.length}%0A%0A`;
+      msg += `*Selamat!* 🎉`;
+
+      window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
+    }
+
+    function restartGame(){
+      playSound(clickSound);
+      currentSuratIndex=0; score=0; correctCount=0; wrongCount=0; completedSurat=0; checkCount=0;
+      document.getElementById("resultScreen").classList.add("hidden");
+      document.getElementById("gameScreen").classList.remove("hidden");
+      initGame();
+    }
+
+    function doneAndBack(){
+      // tombol Selesai: kembali ke layar login (atau bisa diarahkan ke pages lain)
+      document.getElementById("resultScreen").classList.add("hidden");
+      document.getElementById("loginScreen").classList.remove("hidden");
+
+      // reset minimal
+      currentSuratIndex = 0; score = 0; correctCount = 0; wrongCount = 0; completedSurat = 0; checkCount = 0;
+      document.getElementById("statusText").textContent = "Belum dikirim";
+    }
+
+    /* ========== QUEUE & SENDING ========== */
+    const QUEUE_KEY = "game_result_queue_v1";
+    function getQueue(){ try{ const r=localStorage.getItem(QUEUE_KEY); return r?JSON.parse(r):[] }catch(e){return[]} }
+    function setQueue(q){ localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); }
+    function enqueueResult(o){ const q=getQueue(); q.push(o); setQueue(q); }
+    function dequeueOne(){ const q=getQueue(); if(!q.length) return null; const it=q.shift(); setQueue(q); return it; }
+
+    function sendOrQueueResult(payload){
+      updateStatusUI("Mengirim...", "warn");
+      if(!navigator.onLine || !WEB_APP_URL || WEB_APP_URL.includes("https://script.google.com/macros/s/AKfycbypH_q7_6FSGOfVptbHllX2CLdMqBNJDMEnp7i87NBtiVz8UPktOaJGAggc5KrlnQXL/exec")){
+        enqueueResult(payload);
+        updateStatusUI("Offline atau WEB_APP_URL belum diatur. Hasil disimpan sementara.", "warn");
+        return;
+      }
+      if(CLIENT_TOKEN) payload.token = CLIENT_TOKEN;
+      fetch(WEB_APP_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)})
+        .then(res=>res.json().catch(()=>({})))
+        .then(data=>{
+          if(data && data.status === "success"){
+            updateStatusUI("Hasil berhasil tersimpan ✅","ok");
+            flushQueue();
+          } else {
+            enqueueResult(payload);
+            updateStatusUI("Gagal menyimpan (server). Disimpan sementara.","error");
+          }
+        }).catch(err=>{
+          enqueueResult(payload);
+          updateStatusUI("Gagal kirim (koneksi). Disimpan sementara.","error");
+          console.error(err);
+        });
+    }
+
+    async function flushQueue(){
+      if(!navigator.onLine) return;
+      if(!WEB_APP_URL || WEB_APP_URL.includes("https://script.google.com/macros/s/AKfycbypH_q7_6FSGOfVptbHllX2CLdMqBNJDMEnp7i87NBtiVz8UPktOaJGAggc5KrlnQXL/exec")){
+        updateStatusUI("WEB_APP_URL belum diatur, flush dibatalkan.","error"); return;
+      }
+      const q = getQueue();
+      if(!q.length) return;
+      while(true){
+        const item = dequeueOne();
+        if(!item) break;
+        if(CLIENT_TOKEN) item.token = CLIENT_TOKEN;
+        try{
+          const res = await fetch(WEB_APP_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(item)});
+          const data = await res.json().catch(()=>({}));
+          if(!(data && data.status === "success")){
+            enqueueResult(item);
+            updateStatusUI("Beberapa hasil gagal dikirim — akan dicoba lagi.","warn");
+            break;
+          } else {
+            updateStatusUI("Queue: satu hasil tersimpan ✅","ok");
+          }
+        }catch(err){
+          enqueueResult(item);
+          updateStatusUI("Koneksi terputus saat flush. Akan dicoba lagi.","error");
+          break;
+        }
+      }
+    }
+
+    function updateStatusUI(text, level){
+      const el = document.getElementById("statusText");
+      if(!el) return;
+      el.textContent = text;
+      el.className = "status " + (level==="ok"?"":(level==="warn"?"warn":"error"));
+    }
+
+    window.addEventListener('online', ()=>{
+      document.getElementById("connState").textContent = "Online";
+      updateStatusUI("Koneksi online. Mencoba mengirim antrian...","warn");
+      flushQueue();
+    });
+    window.addEventListener('offline', ()=>{
+      document.getElementById("connState").textContent = "Offline";
+      updateStatusUI("Offline — hasil akan disimpan sementara.","warn");
+    });
+
+    window.addEventListener('load', ()=>{
+      document.getElementById("connState").textContent = navigator.onLine ? "Online":"Offline";
+      if(navigator.onLine) setTimeout(flushQueue,800);
+    });
+
+    function lockOrientation(){ if(screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{}); }
+    window.onload = function(){ document.getElementById("playerName").focus(); if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) lockOrientation(); };
+
+  </script>
+</body>
+</html>
